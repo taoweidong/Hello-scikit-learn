@@ -1,37 +1,89 @@
-"""Normal text generator for sensitive data generation"""
 import random
 from typing import List
-
 from loguru import logger
 
 
 class NormalTextGenerator:
-    """生成非敏感中文语句，支持指定生成数量，接口风格与 HuaweiStylePassword 保持一致"""
+    """
+    生成非敏感的英文开发相关普通字符串
+    用于模拟变量名、函数名、日志、注释等内容
+    """
 
     def __init__(self, count: int = 1000):
         self.count = count
-        self.subjects = ['今天', '明天', '昨天', '我', '你', '他', '我们', '大家']
-        self.verbs = ['很', '非常', '特别', '真的', '相当', '有点', '']
-        self.adjectives = ['好', '开心', '不错', '棒', '顺利', '愉快']
-        self.activities = ['开会', '学习', '工作', '休息', '吃饭', '锻炼']
-        self.times = ['早上', '中午', '下午', '晚上', '周末', '假期']
-        self.locations = ['办公室', '家里', '学校', '公园', '健身房']
+        self.subjects = [
+            'user', 'data', 'config', 'file', 'system', 'service',
+            'manager', 'handler', 'processor', 'controller',
+            'api', 'request', 'response', 'session', 'token'
+        ]
+        self.verbs = [
+            'get', 'set', 'create', 'update', 'delete', 'find',
+            'load', 'save', 'process', 'handle', 'validate', 'check'
+        ]
+        self.adjectives = [
+            'valid', 'invalid', 'success', 'failed', 'pending',
+            'active', 'inactive', 'initialized', 'complete', 'error'
+        ]
+        self.suffixes = [
+            '_temp', '_backup', '_copy', '_old', '_new', '_v1', '_v2',
+            '_test', '_dev', '_prod', '_staging'
+        ]
+        self.log_actions = [
+            'starting...', 'completed.', 'initialized.', 'shutting down...',
+            'retrying...', 'connected.', 'disconnected.', 'timeout.',
+            'cached result.', 'cleared cache.'
+        ]
+        self.comments = [
+            'TODO: implement error handling',
+            'FIXME: this may cause memory leak',
+            'HACK: temporary workaround',
+            'Optimization: reduce time complexity',
+            'Initialize global config',
+            'Validate input parameters',
+            'Return default value if null',
+            'Log execution time',
+            'Skip processing if disabled',
+            'Ensure thread safety'
+        ]
+
+    def _generate_variable_name(self) -> str:
+        subject = random.choice(self.subjects)
+        adj = random.choice(self.adjectives)
+        suffix = random.choice(self.suffixes) if random.random() > 0.7 else ''
+        case_style = random.choice(['lower', 'camel', 'snake'])
+        base = f"{adj}{subject.capitalize()}" if case_style == 'camel' else f"{adj}_{subject}"
+        if case_style == 'snake':
+            base = base.lower()
+        return base + suffix
+
+    def _generate_function_call(self) -> str:
+        verb = random.choice(self.verbs)
+        subject = random.choice(self.subjects).capitalize()
+        args = random.choice(['()', '(id)', '(data, timeout)', '(config)'])
+        return f"{verb}{subject}{args}"
+
+    def _generate_log_message(self) -> str:
+        subject = random.choice(self.subjects).capitalize()
+        action = random.choice(self.log_actions)
+        return f"{subject} {action}"
 
     def generate(self) -> List[str]:
-        logger.info(f"🔄 开始生成正常文本（非敏感信息），目标 {self.count} 条...")
+        logger.info(f"🔄 开始生成英文普通字符串（非敏感，编码相关），目标 {self.count} 条...")
         texts = []
 
-        patterns = [
-            lambda: f"{random.choice(self.subjects)}{random.choice(self.verbs)}{random.choice(self.adjectives)}",
-            lambda: f"{random.choice(self.times)}去{random.choice(self.locations)}{random.choice(self.activities)}",
-            lambda: f"{random.choice(self.subjects)}要{random.choice(self.activities)}了",
-            lambda: f"希望{random.choice(self.subjects)}{random.choice(self.activities)}顺利",
-            lambda: f"今天{random.choice(self.activities)}很开心"
+        generators = [
+            self._generate_variable_name,
+            self._generate_function_call,
+            self._generate_log_message,
+            lambda: random.choice(self.comments),
+            lambda: f"// {random.choice(self.comments)}",
+            lambda: f"# {random.choice(self.comments)}",
+            lambda: f"LOG: {random.choice(self.adjectives).capitalize()} state detected."
         ]
 
         for _ in range(self.count):
-            text = random.choice(patterns)()
+            text = random.choice(generators)()
             texts.append(text)
 
-        logger.success(f"✅ 正常文本生成完成，共 {len(texts)} 条")
+        logger.success(f"✅ 英文普通字符串生成完成，共 {len(texts)} 条")
         return texts
