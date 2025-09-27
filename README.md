@@ -13,9 +13,16 @@
 ├── src/
 │   ├── __init__.py
 │   ├── trainer.py              # 模型训练类
-│   └── predictor.py            # 模型预测类
+│   ├── predictor.py            # 模型预测类
+│   └── generate_sensitive_data/ # 数据生成模块
+├── specs/                      # PyInstaller配置文件
+├── dist/                       # 打包输出目录
 ├── train_model.py              # 巡检入口：训练 + 评估
 ├── predict.py                  # 预测入口
+├── generate_data.py            # 数据生成入口
+├── build.py                    # 跨平台打包脚本
+├── build.bat                   # Windows打包脚本
+├── build.sh                    # Linux/macOS打包脚本
 ├── config.py                   # 配置文件
 └── requirements.txt
 ```
@@ -25,7 +32,7 @@
 ## 📦 第一步：安装依赖
 
 ```bash
-pip install pandas scikit-learn openpyxl joblib loguru
+pip install pandas scikit-learn openpyxl joblib loguru pyinstaller
 ```
 
 ### `requirements.txt`
@@ -36,6 +43,7 @@ scikit-learn>=1.0.0
 openpyxl>=3.0.0
 joblib>=1.2.0
 loguru>=0.7.0
+pyinstaller>=6.0.0
 ```
 
 ---
@@ -351,4 +359,93 @@ python predict.py
 | **配置分离** | 所有路径集中管理于 `config.py` |
 | **异常处理** | 关键步骤均有 try/catch 与日志告警 |
 | **生产就绪** | 支持定时训练 + 独立预测，便于部署 |
+| **跨平台打包** | 支持 Windows/Linux 可执行文件打包 |
+
+---
+
+## 🚀 跨平台打包功能
+
+项目现在支持使用 PyInstaller 将 Python 脚本打包为可执行文件，支持 Windows 和 Linux 平台。
+
+### 打包命令
+
+#### Windows 用户：
+```cmd
+# 直接双击运行
+build.bat
+
+# 或者命令行运行
+python build.py
+```
+
+#### Linux/macOS 用户：
+```bash
+# 设置执行权限（仅首次）
+chmod +x build.sh
+
+# 运行打包脚本
+./build.sh
+
+# 或者直接运行
+python3 build.py
+```
+
+### 打包输出
+
+打包完成后，可执行文件将位于 `dist/` 目录下：
+
+```
+dist/
+└── windows-amd64/          # Windows 64位版本
+    ├── generate_data.exe   # 数据生成工具
+    ├── train_model.exe     # 模型训练工具
+    ├── predict.exe         # 预测工具
+    ├── config.py          # 配置文件
+    ├── README.md          # 说明文件
+    ├── data/              # 数据目录
+    ├── models/            # 模型目录
+    └── logs/              # 日志目录
+```
+
+### 打包特性
+
+- **单文件模式：** 每个脚本打包为一个独立的可执行文件
+- **无依赖：** 打包后的文件可在没有 Python 环境的机器上运行
+- **自动配置：** 自动包含所有必要的模块和数据文件
+- **跨平台：** 同一脚本支持 Windows 和 Linux 打包
+
+### 使用打包后的程序
+
+1. **运行数据生成：**
+   ```bash
+   # Windows
+   generate_data.exe
+   
+   # Linux
+   ./generate_data
+   ```
+
+2. **运行模型训练：**
+   ```bash
+   # Windows
+   train_model.exe
+   
+   # Linux
+   ./train_model
+   ```
+
+3. **运行预测：**
+   ```bash
+   # Windows
+   predict.exe
+   
+   # Linux
+   ./predict
+   ```
+
+### 打包注意事项
+
+- 首次打包可能需要较长时间（约 5-10 分钟）
+- 打包后的文件较大（约 100-200MB），这是正常现象
+- 如果打包失败，请检查是否正确安装了 PyInstaller：`pip install pyinstaller`
 

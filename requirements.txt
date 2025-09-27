@@ -3,3 +3,4 @@ scikit-learn>=1.0.0
 openpyxl>=3.0.0
 joblib>=1.2.0
 loguru>=0.7.0
+pyinstaller>=6.0.0
