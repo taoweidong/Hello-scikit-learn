@@ -52,7 +52,6 @@ class PackageConfig:
     
     # 需要包含的数据文件和目录
     INCLUDE_DATA = [
-        ("src", "src"),
         ("config.py", "."),
     ]
     
@@ -118,9 +117,16 @@ class PackageConfig:
         for imp in cls.HIDDEN_IMPORTS:
             cmd.extend(["--hidden-import", imp])
         
-        # 包含数据文件
+        # 添加项目根目录到Python路径，确保能找到src模块
+        cmd.extend(["--paths", "."])
+        
+        # 包含数据文件（使用绝对路径）
+        import os
+        current_dir = os.getcwd()
         for src, dst in cls.INCLUDE_DATA:
-            cmd.extend(["--add-data", f"{src}{os.pathsep}{dst}"])
+            if os.path.exists(src):
+                abs_src = os.path.abspath(src)
+                cmd.extend(["--add-data", f"{abs_src}{os.pathsep}{dst}"])
         
         # 脚本文件
         cmd.append(script_name)

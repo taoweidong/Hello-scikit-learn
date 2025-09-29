@@ -3,3 +3,24 @@
 __pycache__
 *.pyc
 **/__pycache__/
+
+# 构建和打包产物
+/build/
+/dist/
+/packages/
+*.spec
+
+# IDE和编辑器
+.qoder/
+.vscode/
+*.swp
+*.swo
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 操作系统生成文件
+.DS_Store
+Thumbs.db
