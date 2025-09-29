@@ -1,5 +1,7 @@
 @echo off
-echo 开始构建 Hello-scikit-learn 项目...
+echo ====================================================
+echo 🚀 Hello-scikit-learn 一键式打包工具 (Windows)
+echo ====================================================
 echo.
 
 REM 检查Python是否安装
@@ -10,9 +12,18 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM 运行构建脚本
-python build.py
+REM 检查参数
+if "%1"=="" (
+    echo 开始构建当前平台...
+    python build.py
+) else if "%1"=="cleanspec" (
+    echo 清理spec文件...
+    python build.py cleanspec
+) else (
+    echo 执行命令: %1
+    python build.py %1
+)
 
 echo.
-echo 构建完成！按任意键退出...
+echo 操作完成！按任意键退出...
 pause >nul

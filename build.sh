@@ -1,6 +1,8 @@
 #!/bin/bash
 
-echo "开始构建 Hello-scikit-learn 项目..."
+echo "===================================================="
+echo "🚀 Hello-scikit-learn 一键式打包工具 (Linux/macOS)"
+echo "===================================================="
 echo
 
 # 检查Python是否安装
@@ -15,8 +17,17 @@ if ! command -v pip3 &> /dev/null; then
     exit 1
 fi
 
-# 运行构建脚本
-python3 build.py
+# 检查参数
+if [ $# -eq 0 ]; then
+    echo "开始构建当前平台..."
+    python3 build.py
+elif [ "$1" = "cleanspec" ]; then
+    echo "清理spec文件..."
+    python3 build.py cleanspec
+else
+    echo "执行命令: $1"
+    python3 build.py "$1"
+fi
 
 echo
-echo "构建完成！"
+echo "操作完成！"

@@ -1,182 +1,181 @@
 #!/usr/bin/env python3
 """
-跨平台打包脚本
-支持Windows和Linux平台的PyInstaller打包
+一键式打包入口脚本
+使用新的打包模块进行构建
 """
 
-import os
 import sys
-import platform
-import subprocess
-import shutil
+import os
 from pathlib import Path
 
-# 项目配置
-PROJECT_NAME = "hello-scikit-learn"
-MAIN_SCRIPTS = [
-    "generate_data.py",
-    "train_model.py", 
-    "predict.py"
-]
+# 添加src目录到Python路径
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-# 输出目录
-DIST_DIR = "dist"
-BUILD_DIR = "build"
+from src.package import PackageManager, PackageConfig
+from loguru import logger
 
 
-def get_platform_info():
-    """获取平台信息"""
-    system = platform.system().lower()
-    arch = platform.machine().lower()
+def print_banner():
+    """打印横幅信息"""
+    print("="*60)
+    print("🚀 Hello-scikit-learn 一键式打包工具")
+    print("="*60)
+    print()
+
+
+def print_results(summary):
+    """打印构建结果"""
+    print("\n" + "="*60)
+    print("📊 构建结果摘要")
+    print("="*60)
     
-    if system == "windows":
-        return "windows", arch
-    elif system == "linux":
-        return "linux", arch
-    elif system == "darwin":
-        return "macos", arch
+    if "platform" in summary:
+        # 单平台构建结果
+        print(f"平台: {summary['platform']}")
+        print(f"总计: {summary['total']} 个脚本")
+        print(f"成功: {summary['successful']} 个")
+        print(f"失败: {summary['failed']} 个")
+        print(f"成功率: {summary['success_rate']:.1%}")
+        
+        if summary['successful_builds']:
+            print(f"\n✅ 成功构建的脚本:")
+            for script in summary['successful_builds']:
+                print(f"  - {script}")
+        
+        if summary['failed_builds']:
+            print(f"\n❌ 失败的脚本:")
+            for script, error in summary['failed_builds']:
+                print(f"  - {script}: {error}")
+        
+        print(f"\n📁 输出目录: {summary['output_directory']}")
+    
     else:
-        return system, arch
-
-
-def clean_build_dirs():
-    """清理构建目录"""
-    dirs_to_clean = [BUILD_DIR, DIST_DIR]
+        # 跨平台构建结果
+        print(f"总平台数: {summary['total_platforms']}")
+        
+        for platform, results in summary['platform_results'].items():
+            print(f"\n{platform}:")
+            print(f"  成功: {results['successful']}/{results['total']}")
+            print(f"  成功率: {results['success_rate']:.1%}")
     
-    for dir_name in dirs_to_clean:
-        if os.path.exists(dir_name):
-            print(f"清理目录: {dir_name}")
-            shutil.rmtree(dir_name)
-            
-    # 重新创建目录
-    os.makedirs(DIST_DIR, exist_ok=True)
-
-
-def install_dependencies():
-    """安装依赖"""
-    print("安装构建依赖...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-
-
-def build_executable(script_name, platform_name, arch):
-    """构建单个可执行文件"""
-    script_path = Path(script_name)
-    exe_name = script_path.stem
-    
-    print(f"\n开始构建 {exe_name}...")
-    
-    # 构建命令
-    cmd = [
-        "pyinstaller",
-        "--onefile",  # 单文件模式
-        "--clean",    # 清理临时文件
-        "--noconfirm",  # 不询问确认
-        f"--distpath={DIST_DIR}/{platform_name}-{arch}",
-        f"--workpath={BUILD_DIR}/{exe_name}",
-        f"--name={exe_name}",
-        script_name
-    ]
-    
-    # 平台特定配置
-    if platform_name == "windows":
-        cmd.append("--console")  # Windows控制台应用
-    
-    # 添加隐藏导入（解决一些模块找不到的问题）
-    hidden_imports = [
-        "sklearn.utils._cython_blas",
-        "sklearn.neighbors.typedefs", 
-        "sklearn.neighbors.quad_tree",
-        "sklearn.tree._utils",
-        "pandas._libs.tslibs.timedeltas",
-        "jieba",
-        "loguru",
-        "openpyxl",
-        "numpy",
-        "scipy"
-    ]
-    
-    for imp in hidden_imports:
-        cmd.extend(["--hidden-import", imp])
-    
-    # 包含数据文件和模块
-    cmd.extend([
-        "--add-data", f"src{os.pathsep}src",
-        "--add-data", f"config.py{os.pathsep}.",
-    ])
-    
-    try:
-        subprocess.check_call(cmd)
-        print(f"✅ {exe_name} 构建成功")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"❌ {exe_name} 构建失败: {e}")
-        return False
-
-
-def create_distribution_package(platform_name, arch):
-    """创建分发包"""
-    dist_platform_dir = Path(DIST_DIR) / f"{platform_name}-{arch}"
-    
-    if not dist_platform_dir.exists():
-        print(f"警告: 分发目录 {dist_platform_dir} 不存在")
-        return
-    
-    # 复制配置和说明文件
-    files_to_copy = [
-        "config.py",
-        "README.md", 
-        "requirements.txt"
-    ]
-    
-    for file_name in files_to_copy:
-        if os.path.exists(file_name):
-            shutil.copy2(file_name, dist_platform_dir)
-    
-    # 创建示例数据目录
-    example_data_dir = dist_platform_dir / "data"
-    example_data_dir.mkdir(exist_ok=True)
-    
-    # 创建模型目录
-    models_dir = dist_platform_dir / "models"
-    models_dir.mkdir(exist_ok=True)
-    
-    # 创建日志目录
-    logs_dir = dist_platform_dir / "logs"
-    logs_dir.mkdir(exist_ok=True)
-    
-    print(f"✅ 分发包创建完成: {dist_platform_dir}")
+    print("\n" + "="*60)
 
 
 def main():
     """主函数"""
-    print(f"🔧 开始构建 {PROJECT_NAME}")
+    # 确保在项目根目录
+    if not os.path.exists("src"):
+        print("❌ 错误: 请在项目根目录运行此脚本")
+        sys.exit(1)
     
-    # 获取平台信息
-    platform_name, arch = get_platform_info()
-    print(f"检测到平台: {platform_name}-{arch}")
+    # 创建logs目录
+    os.makedirs("logs", exist_ok=True)
     
-    # 清理构建目录
-    clean_build_dirs()
+    # 配置日志
+    logger.add(
+        "logs/build_{time:YYYY-MM-DD}.log",
+        rotation="1 day",
+        level="INFO",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+    )
     
-    # 安装依赖
-    install_dependencies()
-    
-    # 构建所有脚本
-    success_count = 0
-    for script in MAIN_SCRIPTS:
-        if os.path.exists(script):
-            if build_executable(script, platform_name, arch):
-                success_count += 1
+    try:
+        print_banner()
+        
+        # 检查命令行参数
+        if len(sys.argv) > 1:
+            command = sys.argv[1].lower()
+            
+            if command == "cross":
+                # 跨平台构建
+                print("🌍 开始跨平台构建...")
+                manager = PackageManager()
+                summary = manager.build_cross_platform()
+                print_results(summary)
+                
+            elif command == "info":
+                # 显示模块信息
+                from src.package import print_module_info
+                print_module_info()
+                return
+                
+            elif command == "clean":
+                # 清理包文件
+                print("🧹 清理旧的包文件...")
+                manager = PackageManager()
+                manager.clean_packages()
+                print("✅ 清理完成")
+                return
+                
+            elif command == "cleanspec":
+                # 清理spec文件
+                print("🧹 清理build目录中的spec文件...")
+                manager = PackageManager()
+                manager.clean_spec_files()
+                print("✅ spec文件清理完成")
+                return
+                
+            elif command == "list":
+                # 列出已构建的包
+                print("📦 已构建的包:")
+                manager = PackageManager()
+                packages = manager.list_packages()
+                
+                if not packages:
+                    print("暂无已构建的包")
+                else:
+                    for pkg in packages:
+                        print(f"  {pkg.name}-{pkg.version}-{pkg.platform}-{pkg.arch} ({pkg.build_time})")
+                return
+                
+            elif command in ["help", "-h", "--help"]:
+                print("使用方法:")
+                print("  python build.py           # 构建当前平台")
+                print("  python build.py cross     # 跨平台构建")
+                print("  python build.py info      # 显示模块信息")
+                print("  python build.py clean     # 清理旧包")
+                print("  python build.py cleanspec # 清理spec文件")
+                print("  python build.py list      # 列出已构建包")
+                print("  python build.py help      # 显示帮助")
+                return
+            
+            else:
+                print(f"❌ 未知命令: {command}")
+                print("使用 'python build.py help' 查看帮助")
+                sys.exit(1)
+        
         else:
-            print(f"警告: 脚本文件 {script} 不存在，跳过")
+            # 默认构建当前平台
+            print("🔧 开始构建当前平台...")
+            manager = PackageManager()
+            summary = manager.build_current_platform()
+            print_results(summary)
+            
+            # 如果构建成功，询问是否创建发布包
+            if summary['successful'] > 0:
+                try:
+                    response = input("\n是否创建发布包? (y/N): ").strip().lower()
+                    if response in ['y', 'yes']:
+                        platform_parts = summary['platform'].split('-')
+                        platform = platform_parts[0]
+                        arch = platform_parts[1] if len(platform_parts) > 1 else "unknown"
+                        
+                        package_path = manager.create_release_package(platform, arch)
+                        if package_path:
+                            print(f"✅ 发布包创建完成: {package_path}")
+                        else:
+                            print("❌ 发布包创建失败")
+                except KeyboardInterrupt:
+                    print("\n操作取消")
     
-    # 创建分发包
-    if success_count > 0:
-        create_distribution_package(platform_name, arch)
-        print(f"\n🎉 构建完成! 成功构建 {success_count}/{len(MAIN_SCRIPTS)} 个执行文件")
-        print(f"输出目录: {DIST_DIR}/{platform_name}-{arch}")
-    else:
-        print(f"\n❌ 构建失败! 没有成功构建任何执行文件")
+    except KeyboardInterrupt:
+        print("\n\n⏹ 构建被用户中断")
+        sys.exit(1)
+    
+    except Exception as e:
+        logger.error(f"构建失败: {e}")
+        print(f"\n❌ 构建失败: {e}")
+        print("请查看日志文件获取详细信息")
         sys.exit(1)
 
 
